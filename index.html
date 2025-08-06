@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EthOS DeFi Classic Desktop</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <style>
+    html, body {
+      height: 100%;
+      width: 100%;
+      background: #c0c0c0;
+      font-family: 'MS Sans Serif', Tahoma, Arial, sans-serif;
+      font-size: 11px;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      user-select: none;
+    }
+    .top-bar {
+      width: 100vw;
+      height: 26px;
+      background: #c0c0c0;
+      border-bottom: 2px solid #808080;
+      border-top: 2px solid #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8px;
+      font-size: 12px;
+      box-sizing: border-box;
+      z-index: 100;
+      position: fixed;
+      left: 0;
+      top: 0;
+      right: 0;
+    }
+    .top-left { display: flex; align-items: center; gap: 12px; }
+    .top-right { display: flex; align-items: center; gap: 10px; position: relative; }
+    .connect-wallet-btn-topbar {
+      border: 2px outset #bbb;
+      background: #bcbcbc;
+      padding: 1px 12px 1px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      margin-left: 10px;
+      font-family: inherit;
+    }
+    .connect-wallet-btn-topbar.connected {
+      background: #ccffcc;
+      color: #227722;
+      border: 2px outset #bdf7bd;
+      font-weight: bold;
+    }
+    .address-info {
+      font-weight: bold;
+      background: #f0f0f0;
+      border: 1px inset #aaa;
+      padding: 1px 8px;
+      border-radius: 2px;
+      margin-left: 8px;
+      font-family: monospace;
+      cursor: pointer;
+    }
+    .desktop-area {
+      width: 100vw;
+      height: calc(100vh - 64px);
+      position: absolute;
+      top: 28px;
+      left: 0;
+      background: #c0c0c0;
+      overflow: hidden;
+      z-index: 10;
+    }
+    /* WIN98 WINDOW */
+    .win98-window {
+     position: absolute;
+     background: #e0e0e0;
+     border-top: 2.5px solid #fff;
+     border-left: 2.5px solid #fff;
+     border-bottom: 5px solid #808080;
+     border-right: 5px solid #808080;
+     box-shadow: 5px 5px 0 #a0a0a0;
+     min-width: 340px;
+     min-height: 330px;
+     box-sizing: border-box;
+     display: flex;
+     flex-direction: column;
+     z-index: 20;
+     transition: box-shadow 0.08s;
+    }
+    .win98-window.active { box-shadow: 4px 4px 0 #686868; }
+    .win98-titlebar {
+      height: 27px;
+      background: #bcbcbc;
+      border-bottom: 1.5px solid #808080;
+      border-top: 1.5px solid #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 7px 0 8px;
+      box-sizing: border-box;
+      user-select: none;
+      cursor: move;
+    }
+    .win98-title {
+      font-weight: bold;
+      color: #222;
+      font-size: 13px;
+      flex: 1;
+      text-align: center;
+      letter-spacing: 0.2px;
+      padding-left: 2px;
+      pointer-events: none;
+    }
+    .win98-controls {
+      display: flex;
+      gap: 2px;
+      margin-left: 8px;
+    }
+    .win98-btn {
+      width: 18px;
+      height: 16px;
+      background: #bcbcbc;
+      border: 1.2px solid #888;
+      font-size: 13px;
+      font-family: monospace;
+      color: #444;
+      padding: 0;
+      margin: 0 0 0 1px;
+      cursor: pointer;
+      outline: none;
+      border-radius: 0;
+      transition: border 0.08s;
+    }
+    .win98-btn:active {
+      border: 1.2px inset #a0a0a0;
+      background: #c0c0c0;
+    }
+    .win98-body {
+      flex: 1 1 auto;
+      padding: 14px 12px 13px 12px;
+      box-sizing: border-box;
+      overflow: auto;
+    }
+    .win98-window.minimized { display: none !important; }
+    /* Taskbar */
+    .taskbar {
+      width: 100vw;
+      height: 36px;
+      background: #c0c0c0;
+      border-top: 2px solid #fff;
+      border-bottom: 2px solid #808080;
+      display: flex;
+      align-items: center;
+      padding: 2px 4px;
+      z-index: 101;
+      box-sizing: border-box;
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      gap: 4px;
+    }
+    .start-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 28px;
+      padding: 0 15px 0 6px;
+      background: #e0e0e0;
+      border: 2px outset #e0e0e0;
+      font-size: 15px;
+      font-weight: bold;
+      margin-right: 12px;
+      cursor: pointer;
+      min-width: 70px;
+      user-select: none;
+    }
+    .start-btn img {
+     width: 25px;   /* pastikan gambar 1:1, contoh: 24x24px atau 25x25px */
+     height: 25px;
+     object-fit: contain;  /* Ini penting, tidak gepeng! */
+     margin-right: 4px;
+     display: inline-block;
+     vertical-align: middle;
+    }
+    .start-btn:active { border: 2px inset #aaa; }
+    .taskbar-apps {
+      flex: 1;
+      display: flex;
+      gap: 3px;
+      align-items: center;
+      height: 100%;
+    }
+    .taskbar-app {
+      height: 25px;
+      min-width: 90px;
+      max-width: 160px;
+      padding: 0 16px;
+      background: #e0e0e0;
+      border: 2px outset #c0c0c0;
+      font-size: 13px;
+      overflow: hidden;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 5px;
+      user-select: none;
+      position: relative;
+    }
+    .taskbar-app.open, .taskbar-app.active {
+      border: 2px inset #aaa;
+      background: #bcbcbc;
+      font-weight: bold;
+    }
+    .taskbar-app .icon { margin-right: 6px; }
+    .taskbar-time {
+      font-size: 13px;
+      padding: 2px 8px;
+      border: 1px inset #bbb;
+      background: #f0f0f0;
+      margin-left: 10px;
+    }
+    input[type="text"], input[type="number"], input[type="url"], select {
+      border: 2px inset #b0b0b0;
+      background: #fff;
+      padding: 3px 6px;
+      font-size: 11px;
+      font-family: inherit;
+      margin-bottom: 4px;
+      outline: none;
+      box-sizing: border-box;
+    }
+    button, .btn {
+      background: #e0e0e0;
+      border: 2px outset #b0b0b0;
+      padding: 2px 10px;
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+      outline: none;
+      border-radius: 0;
+      margin-bottom: 3px;
+      margin-top: 1px;
+    }
+    button:active, .btn:active {
+      border: 2px inset #b0b0b0;
+      background: #f4f4f4;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2px;
+      font-size: 10.5px;
+      border-bottom: 1px dotted #bbb;
+      padding: 1px 0;
+    }
+    .codes-section {
+      text-align: center;
+      border: 1px inset #c0c0c0;
+      padding: 7px 2px 8px 2px;
+      background: #f8f8f8;
+      margin-top: 8px;
+    }
+    input[type="checkbox"] {
+      accent-color: #b0b0b0;
+      border: 2px inset #a0a0a0 !important;
+      width: 13px; height: 13px;
+      margin-right: 4px;
+    }
+    .pending-row {
+      display: flex;
+      gap: 0;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 4px;
+      margin-top: 2px;
+      background: #ededed;
+      border: 1px solid #bbb;
+      padding: 3px 8px 2px 8px;
+      border-radius: 2px;
+      font-weight: bold;
+    }
+    #tokenForm button[type="submit"] {
+      margin-top: 12px;
+      margin-bottom: 0;
+      border: 2px outset #bbb;
+      background: #f4f4f4;
+      color: #3a1e4d;
+    }
+    #tokenForm button[type="submit"]:active {
+      border: 2px inset #bbb;
+      background: #e0e0e0;
+    }
+    #launchResult {
+      margin-top: 8px;
+      font-size: 11px;
+      background: #ffffcc;
+      border: 1px inset #c0c0c0;
+      padding: 6px;
+      display: none;
+      color: #222;
+    }
+    .green-text { color: #227722; }
+    .red-text { color: #c22; }
+    .blue-text { color: #224499; }
+    @media (max-width: 1300px) {
+      .win98-window { min-width: 220px; }
+    }
+    .win98-titlebar {
+      cursor: grab !important;
+    }
+    .win98-titlebar.dragging, .win98-window.dragging .win98-titlebar {
+      cursor: grabbing !important;
+    }
+    .win98-window {
+      cursor: default !important;
+    }
+  </style>
+</head>
+<body>
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="top-left">
+      <span>EthOS Ready</span>
+      <span id="hideUIBtn" style="cursor:pointer;">Hide UI</span>
+    </div>
+    <div class="top-right">
+      <span>⚙ Ethereum</span>
+      <button id="connectWalletTopbar" class="connect-wallet-btn-topbar">Connect Wallet</button>
+      <span id="addressTextTopbar" class="address-info" style="display:none;"></span>
+      <span>=0</span>
+      <span>EOS Ready</span>
+      <span>ETH $3,578</span>
+      <span id="topTime">04:02 AM</span>
+    </div>
+  </div>
+  <!-- DESKTOP AREA (absolute window, dragable, border tebal) -->
+  <div class="desktop-area" id="desktopArea">
+    <!-- Documentation Window -->
+    <div class="win98-window" id="docWindow" style="left:70px; top:62px; width:380px; height:530px;">
+    <div class="win98-titlebar" data-window="docWindow">
+        <span class="win98-title">Documentation</span>
+        <div class="win98-controls">
+        <button class="win98-btn" data-action="minimize">_</button>
+        <button class="win98-btn" data-action="maximize">□</button>
+        <button class="win98-btn" data-action="close">×</button>
+        </div>
+    </div>
+    <div class="win98-body" id="docContent" style="overflow-y:auto; height:calc(100% - 30px);">
+        <div class="docs-content" style="padding:18px 24px; font-family: 'MS Sans Serif', Tahoma, sans-serif; color:#181818; font-size:14px; line-height:1.44;">
+    <div style="font-size:20px; font-weight:bold; margin-bottom:10px;">
+        Eth OS - DeFi's largest gamified experiment
+    </div>
+    <div style="margin-bottom:20px;">
+        Welcome to the Ethereum Operating System—the first-of-its-kind revenue generating pumpware technology built as a social DeFi sandbox that is filled with composable elements so you can create, trade, communicate, and participate—all in one place.
+    </div>
+    <div style="margin-bottom:20px;">
+        We’ve built Eth OS as a recursive flywheel of 7 composable mechanics spinning under the user’s creativity, powered by ETH rewards, fueled by APY, seasoned with deflation, and served under a strong social UX that helps it to thrive.
+    </div>
+    
+    <div style="border:1.5px solid #bbb; border-radius:9px; padding:18px 14px 16px 14px; background:#f8f8f8; margin-bottom:22px;">
+        <div style="font-size:18px; font-weight:bold; margin-bottom:8px;">Become an Early Visionary</div>
+        <div style="margin-bottom:15px;">
+        Join our gamified airdrop by being active on X. Farm codes and exchange them for AIR—our airdrop token that will allow you to participate in the airdrop. Once you have some AIR, you can farm more. Codes are stackable. More codes = more AIR.
+        </div>
+        <div style="margin-bottom:15px; text-align:center;">
+        <button style="font-size:13px; background:#f2f2f2; border:1.5px solid #bbb; border-radius:6px; padding:3px 16px; margin-right:5px; font-weight:bold;">@Ethereum_OS</button>
+        <span style="font-size:13px;">&amp; take action!</span>
+        </div>
+        <div style="display:flex; gap:7px; justify-content:center; margin-bottom:11px;">
+        <button style="padding:6px 8px; font-size:12px; background:#ececec; border:1.5px solid #bbb; border-radius:5px; color:#222;">0.5 code<br>Quote</button>
+        <button style="padding:6px 11px; font-size:12px; background:#ececec; border:1.5px solid #bbb; border-radius:5px; color:#222;">1 code<br>Post</button>
+        <button style="padding:6px 18px; font-size:13px; background:#e6ffe6; border:1.5px solid #33aa33; border-radius:5px; font-weight:bold;">2 codes<br>Thread</button>
+        </div>
+        <div style="margin-bottom:8px; font-size:13px;">
+        Craft a thread tagging <b>@Ethereum_OS</b>. Share your thoughts, and get 2 codes.
+        </div>
+        <div style="font-size:12.5px;">
+        Entering the code will automatically allow you to mint your tokens.
+        </div>
+    </div>
+    
+    <div style="font-size:17px; font-weight:bold; margin-bottom:8px;">Early Visionaries Win</div>
+    <div style="margin-bottom:18px;">
+        The airdrop is divided into 11 epochs, each lasting 3 days. Each epoch increases the APY by 3% and reduces the rewards by (107% / 11). To get the most out of the airdrop, you need to claim your rewards and mint AIR tokens before the epoch ends.
+    </div>
+    <div style="display:flex; gap:10px; margin-bottom:14px;">
+        <button style="font-size:12px; background:#eeeeee; border:1.5px solid #ccc; border-radius:6px; color:#555;" disabled>Early: 2x Rewards (200,000 AIR)</button>
+        <button style="font-size:12px; background:#eeeeee; border:1.5px solid #ccc; border-radius:6px; color:#555;" disabled>Late: 0.25x Rewards (25,000 AIR)</button>
+    </div>
+    <div style="margin-bottom:18px;">
+        Claim your rewards before the epoch ends and farm new ones with a higher APY! Get as many codes as possible for high rewards before the epoch ends! Airdrop will be calculated based on your AIR share. More AIR = more rewards.
+    </div>
+
+    <div style="font-size:17px; font-weight:bold; margin-bottom:8px;">GM!</div>
+    <div style="margin-bottom:12px;">
+        The GM feature rewards active users with bonus tokens on Airdrop Day. To qualify, <b>Say GM!</b> at least once every two days. If you miss this, you’ll lose the ability to trade AIR tokens and to “Say GM!” (though you can still farm AIR). This mechanism reduces passive users and bots in the airdrop. Stay active and say GM!
+    </div>
+    
+    <div style="font-size:17px; font-weight:bold; margin-bottom:8px;">Stay Tuned for Updates</div>
+    <div style="margin-bottom:18px;">
+        We’ll share new information here and on our X profile. Turn on notifications to grab free codes first and stay updated on the latest announcements.
+    </div>
+    
+    <div style="display:flex; gap:10px; justify-content:center; margin-bottom:18px; margin-top:14px;">
+    <a href="https://x.com/ethereum_os" target="_blank" rel="noopener"
+       style="flex:1; text-align:center; text-decoration:none; font-size:13px; background:#efefef; border:1.5px solid #bbb; border-radius:7px; padding:6px 8px; margin-right:6px; color:#222; font-family:inherit; box-shadow:0 2px 0 #e4e4e4;">
+      <span style="font-family:inherit;">𝕏 Ethereum_OS</span>
+    </a>
+    <a href="https://t.me/ethosportal" target="_blank" rel="noopener"
+       style="flex:1; text-align:center; text-decoration:none; font-size:13px; background:#efefef; border:1.5px solid #bbb; border-radius:7px; padding:6px 8px; color:#222; font-family:inherit; box-shadow:0 2px 0 #e4e4e4;">
+      <span style="font-family:inherit;">tg Eth OS Portal</span>
+    </a>
+  </div>
+
+  <div style="font-size:14px; text-align:center; margin-bottom:6px; margin-top:6px; color:#333;">
+    The earlier you join, the greater your rewards!<br>
+    <b>We'll DM your unique code.</b>
+  </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    <!-- Profile Window -->
+    <div class="win98-window" id="profileWindow" style="left:500px; top:62px; width:480px;">
+      <div class="win98-titlebar" data-window="profileWindow">
+        <span class="win98-title">Profile</span>
+        <div class="win98-controls">
+          <button class="win98-btn" data-action="minimize">_</button>
+          <button class="win98-btn" data-action="maximize">□</button>
+          <button class="win98-btn" data-action="close">×</button>
+        </div>
+      </div>
+      <div class="win98-body">
+    <!-- CHART AREA - Tinggi diperbesar -->
+    <div style="border:2px inset #bbb; height:240px; margin-bottom:12px; background:#fff;">
+    <div class="tradingview-widget-container" style="height:100%;width:100%;">
+        <div id="tradingview_4a89e" style="height:100%;width:100%;"></div>
+        <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+        <script src="public/swap.js"></script>
+        <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+        <script type="text/javascript">
+        new TradingView.widget({
+        "width": "100%",
+        "height": "100%",
+        "symbol": "UNISWAP:AIRWETH_D277B8.USD",
+        "interval": "60",
+        "timezone": "Etc/UTC",
+        "theme": "dark",
+        "style": "1",
+        "locale": "en",
+        "toolbar_bg": "#f1f3f6",
+        "hide_top_toolbar": true,
+        "hide_legend": true,
+        "withdateranges": false,
+        "save_image": false,
+        "studies": [],
+        "show_popup_button": false,
+        "container_id": "tradingview_4a89e"
+        });
+        </script>
+    </div>
+    </div>
+
+    <!-- SWAP AREA -->
+    <div style="border:2px inset #bbb; padding:12px 14px 14px 14px; background:#e8e8e8; margin-bottom:12px;">
+        <div style="font-weight:bold; font-size:12px; margin-bottom:3px;">
+        Swap ETH &amp; $AIR
+        </div>
+        <div id="priceDisplay" style="font-family:monospace; font-size:10.5px; color:#222; margin-bottom:5px; white-space:normal; overflow-x:auto;">
+        Loading price...
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:8px;">
+        <input type="number" id="swapAmount" placeholder="0.000" min="0" style="width:90px; font-size:12px;">
+        <select id="fromToken" style="width:70px; font-size:12px;">
+            <option value="ETH">ETH</option>
+            <option value="AIR">AIR</option>
+        </select>
+        <span style="font-size:15px;line-height:28px;">↔</span>
+        <select id="toToken" style="width:70px; font-size:12px;">
+            <option value="AIR">AIR</option>
+            <option value="ETH">ETH</option>
+        </select>
+        </div>
+        <button class="btn" id="swapBtn" style="width:100%;">Buy 0 AIR</button>
+        <div id="conversionResult" style="font-size:10px;color:#227722;margin-top:3px;"></div>
+    </div>
+        <div style="border:2px inset #bbb; background:#f8f8f8; padding:7px 9px; margin-bottom:10px;">
+          <div class="info-row"><span>👤 User:</span> <span id="userDisplay">Not Connected</span></div>
+          <div class="info-row"><span>Share:</span> <span>0.0%</span></div>
+          <div class="info-row"><span>Balance:</span> <span class="green-text" id="balanceDisplay">$0.0 0 AIR</span></div>
+          <div class="info-row"><span>Epoch:</span> <span class="red-text" id="epochDisplay">16 26th 13th %/1</span></div>
+          <div class="info-row"><span>APY:</span> <span>15.0 % day 12.0 % day</span></div>
+          <div class="info-row"><span>Code:</span> <span>78,500 AIR 05,366 AIR</span></div>
+          <div class="info-row"><span>GM:</span> <span>4/15,830 total</span></div>
+          <div class="info-row"><span>Holders:</span> <span style="color:#666;" id="holderDisplay">149,152,612 AIR <span style="color:#ff2222;">+545/955</span></span></div>
+        </div>
+        <div class="pending-row">
+          <span>Pending: <span id="pendingDisplay">0.000</span></span>
+          <span>Time left: <span id="timeleftDisplay">2d 0h 0m</span></span>
+        </div>
+        <div style="display:flex;gap:6px; margin-bottom:7px;">
+          <button class="btn" id="claimBtn" style="flex:1;">Claim</button>
+          <button class="btn" id="sayGMBtn" style="flex:1;">Say GM!</button>
+        </div>
+        <div class="codes-section">
+          <div style="margin-bottom:5px;">Your Codes: <strong id="yourCodesCount">0</strong></div>
+          <button class="btn" id="getCodeBtn" style="width:100%;">Get your Code!</button>
+        </div>
+      </div>
+    </div>
+    <!-- Token Launch Window -->
+    <div class="win98-window" id="launchWindow" style="left:1020px; top:62px; width:430px;">
+      <div class="win98-titlebar" data-window="launchWindow">
+        <span class="win98-title">Token Launch</span>
+        <div class="win98-controls">
+          <button class="win98-btn" data-action="minimize">_</button>
+          <button class="win98-btn" data-action="maximize">□</button>
+          <button class="win98-btn" data-action="close">×</button>
+        </div>
+      </div>
+      <div class="win98-body">
+        <form id="tokenForm" autocomplete="off">
+          <div style="margin-bottom:7px;">
+            <label style="display:block;font-weight:500;margin-bottom:2px;">Token Name:</label>
+            <input type="text" id="tokenName" maxlength="20" style="width:100%;">
+          </div>
+          <div style="margin-bottom:7px;">
+            <label style="display:block;font-weight:500;margin-bottom:2px;">Token Symbol:</label>
+            <input type="text" id="tokenSymbol" maxlength="8" style="width:100%;">
+          </div>
+          <div style="margin-bottom:7px;">
+            <label style="display:block;font-weight:500;margin-bottom:2px;">Supply:</label>
+            <input type="number" id="tokenSupply" placeholder="111111" style="width:100%;">
+          </div>
+          <div style="margin-bottom:7px;">
+            <label style="display:block;font-weight:500;margin-bottom:2px;">Website:</label>
+            <input type="url" id="tokenWebsite" style="width:100%;">
+          </div>
+          <div style="margin-bottom:7px;">
+            <label style="display:block;font-weight:500;margin-bottom:2px;">Twitter:</label>
+            <input type="text" id="tokenTwitter" style="width:100%;">
+          </div>
+          <div style="margin-bottom:7px;">
+            <label style="display:block;font-weight:500;margin-bottom:2px;">Telegram:</label>
+            <input type="text" id="tokenTelegram" style="width:100%;">
+          </div>
+          <div style="margin:10px 0 12px 0; border:1px inset #c0c0c0;padding:7px 4px 5px 6px; background:#f6f6f6;">
+            <div style="font-weight:bold;margin-bottom:4px;">Gimmick Features:</div>
+            <label style="margin-bottom:2px;display:block;font-size:10.5px;">
+              <input type="checkbox" name="reflections" checked> Reflections
+            </label>
+            <label style="margin-bottom:2px;display:block;font-size:10.5px;">
+              <input type="checkbox" name="autolp" checked> Auto LP
+            </label>
+            <label style="margin-bottom:2px;display:block;font-size:10.5px;">
+              <input type="checkbox" name="ponzi" checked> Ponzi
+            </label>
+            <label style="margin-bottom:2px;display:block;font-size:10.5px;">
+              <input type="checkbox" name="pump" checked> Pump
+            </label>
+            <label style="margin-bottom:2px;display:block;font-size:10.5px;">
+              <input type="checkbox" name="burn" checked> Burn
+            </label>
+            <label style="margin-bottom:2px;display:block;font-size:10.5px;">
+              <input type="checkbox" name="reaper" checked> Reaper
+            </label>
+            <label style="margin-bottom:2px;display:block;font-size:10.5px;">
+              <input type="checkbox" name="gamble"> Gamble
+            </label>
+          </div>
+          <button type="submit" class="btn" style="width:100%;font-weight:bold;">🚀 Launch Token</button>
+          <div id="launchResult"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- TASKBAR -->
+  <div class="taskbar">
+    <div class="start-btn" id="startBtn">
+      <img src="start.png" alt="Start">
+      Start
+    </div>
+    <div class="taskbar-apps">
+      <div class="taskbar-app open" data-window="docWindow" id="taskbar-doc">Documentation</div>
+      <div class="taskbar-app open" data-window="profileWindow" id="taskbar-profile">Profile</div>
+      <div class="taskbar-app open" data-window="launchWindow" id="taskbar-launch">Token Launch</div>
+    </div>
+    <div class="taskbar-time" id="taskbarTime">04:02 AM</div>
+  </div>
+<script>
+/* DRAGGABLE WINDOWS */
+    let dragState = {
+  isDragging: false,
+  dragTarget: null,
+  offsetX: 0,
+  offsetY: 0
+};
+
+document.querySelectorAll('.win98-titlebar').forEach(titlebar => {
+  titlebar.addEventListener('mousedown', function(e) {
+    if (e.target.closest('.win98-controls')) return; // Ignore drag on control buttons
+
+    dragState.isDragging = true;
+    dragState.dragTarget = this.closest('.win98-window');
+    const rect = dragState.dragTarget.getBoundingClientRect();
+    dragState.offsetX = e.clientX - rect.left;
+    dragState.offsetY = e.clientY - rect.top;
+
+    titlebar.classList.add('dragging');
+    dragState.dragTarget.classList.add('dragging');
+    document.body.style.userSelect = "none";
+    e.preventDefault();
+  });
+});
+
+document.addEventListener('mousemove', function(e) {
+  if (!dragState.isDragging || !dragState.dragTarget) return;
+
+  let newLeft = e.clientX - dragState.offsetX;
+  let newTop = e.clientY - dragState.offsetY;
+  // Boundaries
+  newLeft = Math.max(0, Math.min(window.innerWidth - dragState.dragTarget.offsetWidth, newLeft));
+  newTop = Math.max(12, Math.min(window.innerHeight - dragState.dragTarget.offsetHeight - 30, newTop));
+  dragState.dragTarget.style.position = 'absolute';
+  dragState.dragTarget.style.left = newLeft + 'px';
+  dragState.dragTarget.style.top = newTop + 'px';
+});
+
+document.addEventListener('mouseup', function() {
+  if (dragState.isDragging && dragState.dragTarget) {
+    dragState.dragTarget.classList.remove('dragging');
+    dragState.dragTarget.querySelector('.win98-titlebar').classList.remove('dragging');
+  }
+  dragState.isDragging = false;
+  dragState.dragTarget = null;
+  document.body.style.userSelect = "";
+});
+
+/* MINIMIZE / MAXIMIZE / CLOSE */
+document.querySelectorAll('.win98-btn').forEach(btn => {
+  btn.addEventListener('click', function(e) {
+    const action = btn.getAttribute('data-action');
+    const win = btn.closest('.win98-window');
+    const winId = win.id;
+    if (action === "minimize") {
+      win.classList.add('minimized');
+      document.querySelector(`.taskbar-app[data-window="${winId}"]`).classList.remove('active');
+    }
+    if (action === "close") {
+      win.style.display = 'none';
+      document.querySelector(`.taskbar-app[data-window="${winId}"]`).classList.remove('open','active');
+    }
+    if (action === "maximize") {
+      if (win.classList.contains('maximized')) {
+        win.classList.remove('maximized');
+        win.style.width = win.dataset.origWidth || '';
+        win.style.height = win.dataset.origHeight || '';
+        win.style.left = win.dataset.origLeft || '';
+        win.style.top = win.dataset.origTop || '';
+      } else {
+        win.dataset.origWidth = win.style.width;
+        win.dataset.origHeight = win.style.height;
+        win.dataset.origLeft = win.style.left;
+        win.dataset.origTop = win.style.top;
+        win.classList.add('maximized');
+        win.style.left = "0";
+        win.style.top = "0";
+        win.style.width = "99vw";
+        win.style.height = "calc(100vh - 63px)";
+      }
+    }
+    e.stopPropagation();
+  });
+});
+/* TASKBAR LOGIC */
+document.querySelectorAll('.taskbar-app').forEach(app => {
+  app.addEventListener('click', function() {
+    const winId = app.getAttribute('data-window');
+    const win = document.getElementById(winId);
+    if (win.style.display === 'none' || win.classList.contains('minimized')) {
+      win.style.display = '';
+      win.classList.remove('minimized');
+      app.classList.add('open','active');
+      bringToFront(win);
+    } else if (win.classList.contains('active')) {
+      win.classList.add('minimized');
+      app.classList.remove('active');
+    } else {
+      bringToFront(win);
+      app.classList.add('active');
+    }
+  });
+});
+/* LOGIC */
+function updateTime() {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit' });
+  document.getElementById('topTime').textContent = timeStr;
+  document.getElementById('taskbarTime').textContent = timeStr;
+}
+setInterval(updateTime, 1000); updateTime();
+let isConnected = false, userAddress = null;
+function updateAddressDisplays(address, connected=false) {
+  const shortAddress = connected && address ? address.slice(0, 6) + '...' + address.slice(-4) : '';
+  document.getElementById('addressTextTopbar').style.display = connected ? '' : 'none';
+  document.getElementById('addressTextTopbar').textContent = shortAddress;
+  document.getElementById('connectWalletTopbar').textContent = connected ? 'Disconnect Wallet' : 'Connect Wallet';
+  document.getElementById('connectWalletTopbar').classList.toggle('connected', connected);
+  document.getElementById('userDisplay').textContent = shortAddress || 'Not Connected';
+}
+async function connectWallet() {
+  if (isConnected) { isConnected = false; userAddress = null; updateAddressDisplays(null, false); return; }
+  if (!window.ethereum || !window.ethereum.isMetaMask) { alert('MetaMask not detected!'); return; }
+  document.getElementById('connectWalletTopbar').textContent = 'Connecting...';
+  document.getElementById('connectWalletTopbar').disabled = true;
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    if (accounts && accounts.length > 0) {
+      userAddress = accounts[0]; isConnected = true; updateAddressDisplays(userAddress, true);
+      try {
+        const balance = await window.ethereum.request({ method: 'eth_getBalance', params: [userAddress, 'latest'] });
+        const ethBalance = parseInt(balance, 16) / Math.pow(10, 18);
+        document.getElementById('balanceDisplay').innerHTML =
+          `<span class="green-text">$${(ethBalance*3578).toFixed(2)} ${ethBalance.toFixed(4)} ETH</span>`;
+      } catch (e) {}
+    }
+  } catch (error) { alert('Failed to connect wallet.'); }
+  document.getElementById('connectWalletTopbar').disabled = false;
+  document.getElementById('connectWalletTopbar').textContent = isConnected ? 'Disconnect Wallet' : 'Connect Wallet';
+}
+document.getElementById('connectWalletTopbar').onclick = connectWallet;
+if (window.ethereum) {
+  window.ethereum.on('accountsChanged', (accounts) => {
+    if (accounts.length === 0) { isConnected = false; userAddress = null; updateAddressDisplays(null, false);}
+    else { userAddress = accounts[0]; isConnected = true; updateAddressDisplays(userAddress, true);}
+  });
+  window.ethereum.on('chainChanged', () => window.location.reload());
+}
+let priceData = null;
+async function fetchPrice() {
+  try {
+    const response = await fetch('https://api.dexscreener.com/latest/dex/pairs/ethereum/0xD277B8Bef27Af6c2dC0A8aEdDD23A57637892270');
+    const data = await response.json();
+    if (data.pair && data.pair.priceNative && data.pair.priceUsd) {
+      priceData = {
+        airToEth: parseFloat(data.pair.priceNative),
+        ethToAir: 1 / parseFloat(data.pair.priceNative),
+        airToUsd: parseFloat(data.pair.priceUsd),
+        change24h: data.pair.priceChange ? parseFloat(data.pair.priceChange.h24) : 0
+      };
+      const changeColor = priceData.change24h >= 0 ? '#227722' : '#c22';
+      const changeSign = priceData.change24h >= 0 ? '+' : '';
+      document.getElementById('priceDisplay').innerHTML =
+        `1 $AIR ≈ ${priceData.airToEth.toFixed(8)} ETH | ${priceData.airToUsd.toFixed(6)} USD ` +
+        `<span style="color: ${changeColor};">(${changeSign}${priceData.change24h.toFixed(2)}%)</span>`;
+      updateSwapCalculation();
+    } else { document.getElementById('priceDisplay').textContent = 'Price data unavailable'; }
+  } catch (e) { document.getElementById('priceDisplay').textContent = 'Error loading price data'; }
+}
+setInterval(fetchPrice, 30000); fetchPrice();
+function updateSwapCalculation() {
+  const amountInput = document.getElementById('swapAmount');
+  const fromToken = document.getElementById('fromToken');
+  const toToken = document.getElementById('toToken');
+  const swapBtn = document.getElementById('swapBtn');
+  const resultDiv = document.getElementById('conversionResult');
+  const amount = parseFloat(amountInput.value) || 0;
+  if (amount <= 0 || !priceData) { swapBtn.textContent = 'Buy 0 AIR'; resultDiv.textContent = ''; return; }
+  let outputAmount = 0, resultText = '';
+  if (fromToken.value === 'ETH' && toToken.value === 'AIR') {
+    outputAmount = amount * priceData.ethToAir; resultText = `${amount} ETH → ${outputAmount.toFixed(6)} AIR`;
+    swapBtn.textContent = `Buy ${outputAmount.toFixed(2)} AIR`;
+  } else if (fromToken.value === 'AIR' && toToken.value === 'ETH') {
+    outputAmount = amount * priceData.airToEth; resultText = `${amount} AIR → ${outputAmount.toFixed(8)} ETH`;
+    swapBtn.textContent = `Sell ${amount} AIR`;
+  }
+  resultDiv.textContent = resultText;
+}
+document.getElementById('swapAmount').addEventListener('input', updateSwapCalculation);
+document.getElementById('fromToken').addEventListener('change', () => {
+  if (document.getElementById('fromToken').value === document.getElementById('toToken').value)
+    document.getElementById('toToken').value = document.getElementById('fromToken').value === 'ETH' ? 'AIR' : 'ETH';
+  updateSwapCalculation();
+});
+document.getElementById('toToken').addEventListener('change', () => {
+  if (document.getElementById('fromToken').value === document.getElementById('toToken').value)
+    document.getElementById('fromToken').value = document.getElementById('toToken').value === 'ETH' ? 'AIR' : 'ETH';
+  updateSwapCalculation();
+});
+document.getElementById('swapBtn').onclick = handleSwap;
+  async function handleSwap() {
+    if (!isConnected) {
+      alert('Please connect your wallet first!');
+      return;
+    }
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    const amount = document.getElementById('swapAmount').value;
+    const fromToken = document.getElementById('fromToken').value;
+    const toToken = document.getElementById('toToken').value;
+    const resultDiv = document.getElementById('conversionResult');
+    const swapBtn = document.getElementById('swapBtn');
+
+    swapBtn.disabled = true;
+    resultDiv.textContent = 'Starting swap...';
+    swapUniswap({
+      fromToken,
+      toToken,
+      amount,
+      signer,
+      onProgress: msg => resultDiv.textContent = msg,
+      onSuccess: tx => {
+        resultDiv.innerHTML = "✅ Success! <a href='https://etherscan.io/tx/" + tx.hash + "' target='_blank'>" + tx.hash.slice(0, 10) + "...</a>";
+        swapBtn.disabled = false;
+      },
+      onError: err => {
+        resultDiv.textContent = "❌ Error: " + (err.reason || err.message);
+        swapBtn.disabled = false;
+      }
+    });
+  } 
+
+document.getElementById('tokenForm').onsubmit = function(e) {
+  e.preventDefault();
+  if (!isConnected) { alert('Connect wallet!'); return; }
+  const tokenName = document.getElementById('tokenName').value.trim();
+  const tokenSymbol = document.getElementById('tokenSymbol').value.trim();
+  const tokenSupply = document.getElementById('tokenSupply').value.trim();
+  if (!tokenName || !tokenSymbol || !tokenSupply) { alert('Fill all required!'); return; }
+  if (tokenName.length < 2) { alert('Token name min 2 chars'); return; }
+  if (tokenSymbol.length < 1) { alert('Token symbol min 1 char'); return; }
+  const supply = parseInt(tokenSupply);
+  if (isNaN(supply) || supply <= 0) { alert('Supply must be positive!'); return; }
+  const tokenWebsite = document.getElementById('tokenWebsite').value.trim();
+  const tokenTwitter = document.getElementById('tokenTwitter').value.trim();
+  const tokenTelegram = document.getElementById('tokenTelegram').value.trim();
+  const gimmicks = [];
+  this.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => { gimmicks.push(cb.name); });
+  const resultDiv = document.getElementById('launchResult');
+  resultDiv.style.display = 'block';
+  resultDiv.textContent = 'Preparing token deployment...';
+  setTimeout(() => resultDiv.textContent = 'Compiling smart contract...', 800);
+  setTimeout(() => resultDiv.textContent = 'Deploying to Ethereum network...', 1800);
+  setTimeout(() => {
+    const contractAddress = '0x' + Math.random().toString(16).substring(2, 42).padStart(40, '0');
+    resultDiv.innerHTML = `
+      <strong>🚀 Token Launched Successfully!</strong><br>
+      <strong>Name:</strong> ${tokenName} (${tokenSymbol})<br>
+      <strong>Supply:</strong> ${parseInt(tokenSupply).toLocaleString()}<br>
+      <strong>Contract:</strong> <span style="font-family:monospace;font-size:9px;">${contractAddress}</span><br>
+      <strong>Features:</strong> ${gimmicks.length > 0 ? gimmicks.join(', ') : 'Standard'}<br>
+      ${tokenWebsite ? `<strong>Website:</strong> ${tokenWebsite}<br>` : ''}
+      ${tokenTwitter ? `<strong>Twitter:</strong> ${tokenTwitter}<br>` : ''}
+      ${tokenTelegram ? `<strong>Telegram:</strong> ${tokenTelegram}<br>` : ''}
+      <br><em>⚠️ Note: This is a simulation for demonstration purposes</em>
+    `;
+    setTimeout(() => { document.getElementById('tokenForm').reset(); resultDiv.style.display = 'none'; }, 9000);
+  }, 3000);
+};
+setInterval(() => {
+  const epochElement = document.getElementById('epochDisplay');
+  if (epochElement) {
+    const randomEpoch = Math.floor(Math.random() * 30) + 1;
+    const randomDay = Math.floor(Math.random() * 28) + 1;
+    epochElement.textContent = `${randomEpoch} ${randomDay}th 13th %/1`;
+  }
+  const holderElement = document.getElementById('holderDisplay');
+  if (holderElement) {
+    const baseHolders = 149152612;
+    const variation = Math.floor(Math.random() * 1000) - 500;
+    const newHolders = baseHolders + variation;
+    const change = Math.floor(Math.random() * 200) + 400;
+    const total = Math.floor(Math.random() * 200) + 800;
+    holderElement.innerHTML = `${newHolders.toLocaleString()} AIR <span style="color:#c22;">+${change}/${total}</span>`;
+  }
+}, 45000);
+document.getElementById('getCodeBtn').onclick = function() {
+  const el = document.getElementById('yourCodesCount');
+  let cur = parseInt(el.textContent);
+  el.textContent = cur + 1;
+};
+setInterval(() => {
+  document.getElementById('pendingDisplay').textContent = (Math.random()*0.1).toFixed(3);
+  document.getElementById('timeleftDisplay').textContent = Math.floor(Math.random()*2+1)+'d '+Math.floor(Math.random()*24)+'h '+Math.floor(Math.random()*59)+'m';
+}, 24000);
+document.getElementById('startBtn').onclick = function() {
+  showCustomAlert(`
+EthOs Start Menu
+━━━━━━━━━━━━━━━━━━━━━
+This Just For Fun, But You can swap Fr
+━━━━━━━━━━━━━━━━━━━━━
+Click taskbar items to navigate`);
+};
+document.getElementById('hideUIBtn').onclick = function() {
+  document.getElementById('desktopArea').style.display = 'none';
+  document.querySelector('.taskbar').style.display = 'none';
+};
+function showCustomAlert(msg) {
+    document.getElementById('customAlertContent').innerHTML = msg;
+    document.getElementById('customAlert').style.display = 'block';
+  }
+  function closeCustomAlert() {
+    document.getElementById('customAlert').style.display = 'none';
+  }
+</script>
+    <div id="customAlert" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100vw; height:100vh; background:rgba(30,30,30,0.13);">
+    <div id="customAlertBox"
+        style="position:absolute; left:50%; top:36%; transform:translate(-50%,-50%); background:#e0e0e0; border-top:3px solid #fff; border-left:3px solid #fff; border-bottom:5px solid #808080; border-right:5px solid #808080; min-width:355px; max-width:430px; box-shadow:6px 6px 0 #a0a0a0; box-sizing:border-box; font-family:'MS Sans Serif',Tahoma,sans-serif;">
+        <!-- Titlebar -->
+        <div style="background:#c1c1c1; height:26px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #888;">
+        <div style="font-weight:bold; font-size:13px; color:#222; margin-left:12px;">Landpasti says :</div>
+        <button onclick="closeCustomAlert()" style="background: #e0e0e0; border:1.5px outset #e0e0e0; width:22px; height:20px; margin:0 7px 0 0; font-size:13px; color:#000; cursor:pointer; font-weight:bold;">×</button>
+        </div>
+        <!-- Isi Alert -->
+        <div style="display:flex; align-items:flex-start; gap:14px; padding:20px 18px 8px 18px;">
+        <img src="char.png" alt="Character"
+            style="width:64px; height:64px; object-fit:contain; background:none; border-radius:10px; border:none; margin-top:2px;">
+        <div style="font-size:14px; color:#232323; white-space:pre-line; margin-top:3px; line-height:1.42;" id="customAlertContent">
+            <!-- Menu text will go here -->
+        </div>
+        </div>
+        <div style="display:flex; justify-content:center; align-items:center; padding:6px 0 16px 0;">
+        <button onclick="closeCustomAlert()" style="min-width:94px; font-size:13px; background:#e0e0e0; border:2px outset #e0e0e0; padding:4px 20px; margin-top:2px; font-family:inherit; cursor:pointer;">OK</button>
+        </div>
+    </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
